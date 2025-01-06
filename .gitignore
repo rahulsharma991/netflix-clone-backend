@@ -4,3 +4,4 @@
 
 # System files
 .env
+.env.debug

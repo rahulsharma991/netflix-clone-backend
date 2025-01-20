@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { ResponseHandler } from "../../helpers/responseHandler";
-import { User } from "../../models/user.model";
-import { ValidateRequestBody } from "../../helpers/validateRequestBody";
+import { ResponseHandler } from "../helpers/responseHandler";
+import { User } from "../models/user.model";
+import { ValidateRequestBody } from "../helpers/validateRequestBody";
 import bcryptjs from 'bcryptjs';
-import { generateTokenAndSetCookie } from "../../utils/generateToken";
-import {fetchFromTMDB} from "../../services/tmdb.service";
+import { generateTokenAndSetCookie } from "../utils/generateToken";
+import {fetchFromTMDB} from "../services/tmdb.service";
 export async function signup(req:Request,res:Response):Promise<any> {
     try {
         const {email, password, username} = req.body;
@@ -51,8 +51,6 @@ export async function signup(req:Request,res:Response):Promise<any> {
 }
 export async function login(req:Request, res:Response): Promise<any> {
     try {
-        const fetchData = await fetchFromTMDB('GET','watchlist/tv?language=en-US&page=1&sort_by=created_at.asc');
-        console.log(fetchData);
         const {email, password} = req.body;
         let isRequestBodyValid = ValidateRequestBody.validate(['email', 'password'], req);
         if(!isRequestBodyValid) {

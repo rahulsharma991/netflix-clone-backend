@@ -3,6 +3,8 @@ import { ResponseHandler } from "../../helpers/responseHandler";
 import { User } from "../../models/user.model";
 import { ValidateRequestBody } from "../../helpers/validateRequestBody";
 import bcryptjs from 'bcryptjs';
+import { generateTokenAndSetCookie } from "../../utils/generateToken";
+import {fetchFromTMDB} from "../../services/tmdb.service";
 export async function signup(req:Request,res:Response):Promise<any> {
     try {
         const {email, password, username} = req.body;
@@ -10,8 +12,6 @@ export async function signup(req:Request,res:Response):Promise<any> {
             if(!isRequestBodyValid) {
                 return ResponseHandler.SendResponse(res, 400, 'Invalid payload');
             }
-        if(!req.body.hasOwnProperty('password') && !req.body.hasOwnProperty('email') && !req.body.hasOwnProperty('username')) {
-        }
         if(!password) {
            return ResponseHandler.SendResponse(res, 400, 'Password cannot be blank')
         }
@@ -49,11 +49,44 @@ export async function signup(req:Request,res:Response):Promise<any> {
         ResponseHandler.SendResponse(res, 500)
     }
 }
-export async function login(req:Request, res:Response) {
-    res.send('Login')
+export async function login(req:Request, res:Response): Promise<any> {
+    try {
+        const fetchData = await fetchFromTMDB('GET','watchlist/tv?language=en-US&page=1&sort_by=created_at.asc');
+        console.log(fetchData);
+        const {email, password} = req.body;
+        let isRequestBodyValid = ValidateRequestBody.validate(['email', 'password'], req);
+        if(!isRequestBodyValid) {
+            return ResponseHandler.SendResponse(res, 400, 'Invalid payload');
+        }
+        const user = await User.findOne({email});
+        if(!user) {
+            return ResponseHandler.SendResponse(res, 400, 'Invalid Credentials');
+        }
+        const passwordMatch = bcryptjs.compareSync(password, user.password);
+        if(!passwordMatch) {
+            return ResponseHandler.SendResponse(res, 400, 'Invalid Credentials');
+        }
+        const userId = user._id.toString();
+       const token = generateTokenAndSetCookie(userId, res);
+        if(token) {
+            const data = {
+                email: user.email,
+                username: user.username,
+                image: user.image
+            }
+            ResponseHandler.SendResponse(res, 200, 'Login successfully', data);
+        }
+    }catch(err) {
+        ResponseHandler.SendResponse(res, 500, "Internal Server Error")
+    }
 }
  
 export async function logout(req:Request, res:Response){
-    res.send('Logout')
+    try {
+        res.clearCookie('jwt-netflix');
+        ResponseHandler.SendResponse(res, 200, 'Logout successfully');
+    } catch(err) {
+        ResponseHandler.SendResponse(res, 500)
+    }
 }
 
